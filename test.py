@@ -1,18 +1,20 @@
-from datetime import datetime
-import numpy as np
-import argparse
+from datetime import datetime                 # Dùng để tính thời gian thực thi
+import numpy as np                            # Thư viện xử lý số và ma trận
+import argparse                               # Xử lý đối số dòng lệnh từ terminal
 
-from model.initialization import initialization
-from model.utils import evaluation
-from config import conf
+from model.initialization import initialization  # Hàm khởi tạo mô hình từ config
+from model.utils import evaluation               # Hàm tính toán độ chính xác mô hình
+from config import conf                          # Import tập tham số cấu hình mô hình
 
 
+# Hàm hỗ trợ chuyển chuỗi TRUE/FALSE thành giá trị boolean
 def boolean_string(s):
     if s.upper() not in {'FALSE', 'TRUE'}:
         raise ValueError('Not a valid boolean string')
     return s.upper() == 'TRUE'
 
 
+# Khởi tạo parser để đọc các tham số dòng lệnh
 parser = argparse.ArgumentParser(description='Test')
 parser.add_argument('--iter', default='80000', type=int,
                     help='iter: iteration of the checkpoint to load. Default: 80000')
@@ -21,17 +23,18 @@ parser.add_argument('--batch_size', default='1', type=int,
 parser.add_argument('--cache', default=False, type=boolean_string,
                     help='cache: if set as TRUE all the test data will be loaded at once'
                          ' before the transforming start. Default: FALSE')
-opt = parser.parse_args()
+opt = parser.parse_args()  # Parse các tham số truyền vào
 
 
-# Exclude identical-view cases
+# Hàm loại bỏ các giá trị trên đường chéo (identical-view), dùng để đánh giá cross-view
 def de_diag(acc, each_angle=False):
-    result = np.sum(acc - np.diag(np.diag(acc)), 1) / 10.0
+    result = np.sum(acc - np.diag(np.diag(acc)), 1) / 10.0  # Trừ đường chéo rồi lấy trung bình theo hàng
     if not each_angle:
-        result = np.mean(result)
+        result = np.mean(result)  # Nếu không yêu cầu theo từng góc, lấy trung bình toàn bộ
     return result
 
 
+# Khởi tạo mô hình ở chế độ test, có thể preload toàn bộ dữ liệu nếu opt.cache = True
 m = initialization(conf, test=opt.cache)[0]
 
 # load model checkpoint of iteration opt.iter
